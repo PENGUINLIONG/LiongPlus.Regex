@@ -1,6 +1,6 @@
-﻿//
+//
 //  rpp.cpp
-//  RegexPlusPlus
+//  LiongPlus.Regex
 //
 //  Created by 梁任冬 on 16/05/06.
 //  Copyright © 2015年 梁任冬. All rights reserved.
@@ -40,7 +40,8 @@ namespace LiongPlus
 
         // Determinators
 
-		// Note: Every Functor have the responsibility to advance each time it succeeds.
+		// Note: Every Functor MUST advance $c to the end each time it succeeds. When it fails, $c MUST retreate to the beginning.
+        //       Every Not-function MUST change $c.
 		//       Also, it also need to check if it is at the end of string for safety.
         //       '\0' should never be used in regex.
         
@@ -58,8 +59,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = (*c == TC);
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         template<char TC>
@@ -69,8 +70,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = (*c != TC && *c != '\0');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         template<typename T>
@@ -81,13 +82,15 @@ namespace LiongPlus
         public:
             static DeterResult Do(char*& c)
             {
+                auto str = c;
                 std::array<char, sizeof...(TStr)> _Str = { TStr... };
                 for (auto strc : _Str)
                 {
-                    if (*c != strc)
+                    if (*str != strc)
                         return DeterResult::Failed;
-                    ++c;
+                    ++str;
                 }
+                c = str;
                 return DeterResult::Succeeded;
             }
         };
@@ -99,12 +102,13 @@ namespace LiongPlus
         public:
             static DeterResult Do(char*& c)
             {
+                auto str = c;
                 std::array<char, sizeof...(TStr)> _Str = { TStr... };
                 for (auto strc : _Str)
                 {
-                    if (*c != strc)
+                    if (*str != strc)
                         return DeterResult::Succeeded;
-                    ++c;
+                    ++str;
                 }
                 return DeterResult::Failed;
             }
@@ -116,8 +120,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = (TFrom >= *c && *c <= TTo);
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         template<char TFrom, char TTo>
@@ -127,8 +131,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = ((TFrom < *c || *c > TTo) && *c != '\0');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         class IsBlank
@@ -137,8 +141,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = (*c == ' ' || *c == '\t');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         class IsDigit
@@ -147,8 +151,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
 			{
                 bool rv = ((*c >= '0' && *c <= '9') && *c != '\0');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
 			}
 		};
 		class NotDigit
@@ -157,8 +161,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
 			{
                 bool rv = ((*c < '0' || *c > '9') && *c != '\0');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
 			}
 		};
         class IsUpper
@@ -167,8 +171,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = ((*c >= 'A' && *c <= 'Z') && *c != '\0');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         class NotUpper
@@ -177,8 +181,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = ((*c < 'A' || *c > 'Z') && *c != '\0');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         class IsAlpha
@@ -187,8 +191,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = (((*c >= 'A' && *c <= 'Z') || (*c >= 'a' && *c <= 'z')) && *c != '\0');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         class NotAlpha
@@ -197,8 +201,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = (((*c < 'A' || *c > 'Z') && (*c < 'a' || *c > 'z')) && *c != '\0');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         class IsLower
@@ -207,8 +211,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = ((*c >= 'a' && *c <= 'z') && *c != '\0');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         class NotLower
@@ -217,8 +221,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = ((*c < 'A' || *c > 'Z') && *c != '\0');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         class IsSpace
@@ -227,8 +231,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n' || *c == '\v' || *c == '\f');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         class NotSpace
@@ -237,8 +241,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = ((*c != ' ' && *c != '\t' && *c != '\r' && *c != '\n' && *c != '\v' && *c != '\f') && *c != '\0');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         class IsWord
@@ -247,8 +251,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = ((*c >= 'A' && *c <= 'Z') || (*c >= 'a' && *c <= 'z') || (*c >= '0' && *c <= '9') || *c == '_');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         class NotWord
@@ -257,8 +261,8 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = ((*c < 'A' || *c > 'Z') && (*c < 'a' || *c > 'z') && (*c < '0' || *c > '9') && *c != '_');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         class AnyChar
@@ -267,26 +271,29 @@ namespace LiongPlus
             static DeterResult Do(char*& c)
             {
                 bool rv = (*c != '\0');
-                ++c;
-                return rv ? DeterResult::Succeeded : DeterResult::Failed;
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
         // This is used to escape from loops.
         // <TStopCondition> is another determinator which decides when to step out.
-        // If condition is satisfied, $c will NOT be at the end of stop condition.
+        // If condition is satisfied, $c MUST be at the beginning of stop condition.
+        // Generally this is is used with Anychar.
         template<typename TDeterminator, typename TStopCondition>
         class Conditional
         {
         public:
             static DeterResult Do(char*& c)
             {
-                auto temp = c;
-                if (TStopCondition::Do(temp))
+                auto str = c;
+                if (TStopCondition::Do(str))
                     return DeterResult::StepOut;
-                return TDeterminator::Do(c);
+                c = str;
+                bool rv = TDeterminator::Do(c);
+                if (rv) return ++c, DeterResult::Succeeded;
+                else return DeterResult::Failed;
             }
         };
-        
         template<DeterResult(*TDeterminator)(char*&)>
         class Customized
         {
@@ -317,25 +324,23 @@ namespace LiongPlus
 				if (TCounter::From < 0) // It is illegal to have a min of negative number.
 					return false;
 
-				long counter = TCounter::From; // At least $TTime::From times.
+				long counter = TCounter::From; // At least $TCounter::From times.
 				while (counter-- > 0)
 				{
                     if (TDeterminator::Do(c) != DeterResult::Succeeded)
 						return false;
-					++c;
 				}
 
 				if (TCounter::To >= 0) // Negative max means there is no upper boundary.
 				{
-					counter = TCounter::To - TCounter::From; // At most $TTime::To times.
+					counter = TCounter::To - TCounter::From; // At most $TCounter::To times.
 					while (counter-- > 0)
 					{
                         if (TDeterminator::Do(c) != DeterResult::Succeeded)
 							return true;
-						++c;
 					}
-
-                    if (TDeterminator::Do(c) == DeterResult::Succeeded) // There should be no more now.
+                    auto str = c;
+                    if (TDeterminator::Do(str) == DeterResult::Succeeded) // There should be no more now.
 						return false;
 				}
 				else
@@ -372,9 +377,12 @@ namespace LiongPlus
 		public:
 			bool Do(char*& c) override
 			{
-                if (TDeterminator::Do(c) != DeterResult::Succeeded || TDeterminator::Do(c) == DeterResult::Succeeded)
-					return false;
-
+                if (TDeterminator::Do(c) == DeterResult::Succeeded)
+                {
+                    auto str = c;
+                    if (TDeterminator::Do(str) == DeterResult::Succeeded)
+                        return false;
+                }
 				return true;
 			}
 		};
@@ -393,6 +401,12 @@ namespace LiongPlus
 		};
         
         // Logical operation
+        
+        template<typename ... T>
+        class MatchOr; // Do determinator or and match or ////////////////
+        
+        template<typename TDeterminator>
+        class MatchFactor; // Used to parse determinators when doing determinator or //////////////
         
         template<typename ... TMatchSeries>
         class MatchOr : public MatchBase
@@ -470,17 +484,21 @@ namespace LiongPlus
 			bool Match(const char* str)
 			{
 				char* strToGo = const_cast<char*>(str);
-
+                bool flag = false;
 				while (*strToGo != '\0')
 				{
+                    bool flagForThisTime = true;
 					for (MatchBase* match : _MatchSeries)
 					{
-						if (match->Do(strToGo))
-							return true;
+						if (!match->Do(strToGo))
+                            flagForThisTime = false;
 					}
+                    if (flagForThisTime)
+                        flag = true;
+                    
                     ++strToGo;
 				}
-				return false;
+				return flag;
 			}
 		};
 

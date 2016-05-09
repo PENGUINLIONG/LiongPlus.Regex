@@ -1,16 +1,9 @@
-//
-//  rpp.cpp
-//  LiongPlus.Regex
-//
-//  Created by 梁任冬 on 16/05/06.
-//  Copyright © 2015年 梁任冬. All rights reserved.
-//
+// File: Regex.hpp
+// Author: Rendong Liang (Liong)
 
 #pragma once
 #include <array>
 #include <utility>
-
-#define L_REGEX_STR(str) [](){ return str; }
 
 namespace LiongPlus
 {
@@ -37,6 +30,7 @@ namespace LiongPlus
 		typedef RepCounter<0, -1> NeverOrMore;
 		typedef RepCounter<0, 1> OnceOrNever;
 		typedef RepCounter<1, -1> OnceOrMore;
+		typedef RepCounter<1, 1> Once;
 
         // Determinators
 
@@ -44,13 +38,6 @@ namespace LiongPlus
         //       Every Not-function MUST change $c.
 		//       Also, it also need to check if it is at the end of string for safety.
         //       '\0' should never be used in regex.
-        
-        enum class bool
-        {
-            Succeeded,
-            StepOut,
-            Failed
-        };
         
         template<char TC>
         class SameTo
@@ -63,15 +50,19 @@ namespace LiongPlus
                 else return false;
             }
         };
-        template<char TC>
-        class DifFrom
+		template<char ... TCs>
+        class SameToAny
         {
         public:
             static bool Do(char*& c)
             {
-                bool rv = (*c != TC && *c != '\0');
-                if (rv) return ++c, true;
-                else return false;
+				std::array<char, sizeof...(TCs)> rst = { (*c == TCs)... };
+                for (auto flag : rst)
+				{
+					if (flag)
+						return true;
+				}
+                return false;
             }
         };
         template<typename T>
@@ -91,6 +82,32 @@ namespace LiongPlus
                     ++str;
                 }
                 c = str;
+                return true;
+            }
+        };
+		template<char TC>
+        class DifFrom
+        {
+        public:
+            static bool Do(char*& c)
+            {
+                bool rv = (*c != TC && *c != '\0');
+                if (rv) return ++c, true;
+                else return false;
+            }
+        };
+		template<char ... TCs>
+        class DifFromAny
+        {
+        public:
+            static bool Do(char*& c)
+            {
+				std::array<char, sizeof...(TCs)> rst = { (*c == TCs)... };
+                for (auto flag : rst)
+				{
+					if (flag)
+						return false;
+				}
                 return true;
             }
         };
@@ -327,7 +344,7 @@ namespace LiongPlus
 				long counter = TCounter::From; // At least $TCounter::From times.
 				while (counter-- > 0)
 				{
-                    if (TDeter::Do(c) != true)
+                    if (!TDeter::Do(c))
 						return false;
 				}
 
@@ -336,16 +353,16 @@ namespace LiongPlus
 					counter = TCounter::To - TCounter::From; // At most $TCounter::To times.
 					while (counter-- > 0)
 					{
-                        if (TDeter::Do(c) != true)
+                        if (!TDeter::Do(c))
 							return true;
 					}
                     auto str = c;
-                    if (TDeter::Do(str) == true) // There should be no more now.
+                    if (TDeter::Do(str)) // There should be no more now.
 						return false;
 				}
 				else
 				{
-                    while (TDeter::Do(c) == true);
+                    while (TDeter::Do(c));
 				}
 
 				return true;
@@ -357,7 +374,7 @@ namespace LiongPlus
 		public:
 			bool Do(char*& c) override
 			{
-                return (TDeter::Do(c) != true);
+                return (!TDeter::Do(c));
             }
 		};
 		template<typename TDeter>
@@ -366,7 +383,7 @@ namespace LiongPlus
 		public:
 			bool Do(char*& c) override
 			{
-                while (TDeter::Do(c) != true);
+                while (!TDeter::Do(c));
 
 				return true;
 			}
@@ -377,13 +394,8 @@ namespace LiongPlus
 		public:
 			bool Do(char*& c) override
 			{
-                if (TDeter::Do(c) == true)
-                {
-                    auto str = c;
-                    if (TDeter::Do(str) == true)
-                        return false;
-                }
-				return true;
+                TDeter::Do(c);
+                return true;
 			}
 		};
 		template<typename TDeter>
@@ -392,44 +404,86 @@ namespace LiongPlus
 		public:
 			bool Do(char*& c) override
 			{
-                if (TDeter::Do(c) != true)
+                if (!TDeter::Do(c))
 					return false;
-                while (TDeter::Do(c) == true);
+                while (TDeter::Do(c));
 
 				return true;
+			}
+		};
+		template<typename TDeter>
+		class Match<TDeter, RepCounter<1, 1>> : public MatchBase
+		{
+		public:
+			bool Do(char*& c) override
+			{
+                if (TDeter::Do(c))
+                    return true;
+                else
+                    return false;
 			}
 		};
         
         // Logical operation
         
-        template<typename ... TMatchSeries>
-        class MatchOr : public MatchBase
-        {
-        private:
+		template<typename ... TMatchSeries>
+		class MatchFactor
+		{
+		public:
             std::array<MatchBase*, sizeof...(TMatchSeries)> _MatchSeries;
-        public:
-            MatchOr()
+
+            MatchFactor()
             {
                 _MatchSeries = { new TMatchSeries()... };
             }
-            ~MatchOr()
+            ~MatchFactor()
             {
                 for (MatchBase* ptr : _MatchSeries)
                     delete ptr;
             }
-            
-            bool Do(char*& c)
+		};
+		
+        template<typename TFactor>
+        class _MatchOr
+        {
+        public:
+            static bool Do(char*& c)
             {
-                for (auto match : _MatchSeries)
+                TFactor factor;
+				for (auto match : factor._MatchSeries)
                 {
                     auto temp = c;
                     if (match->Do(temp))
                         return true;
                 }
-                return false;
+				return false;
             }
         };
+		
+		template<typename TFactor>
+        class _MatchChain
+        {
+        public:
+            static bool Do(char*& c)
+            {
+                TFactor factor;
+                for (auto match : factor._MatchSeries)
+                {
+                    auto temp = c;
+                    if (!match->Do(temp))
+                        return false;
+					c = temp;
+                }
+				return true;
+            }
+        };
+		
+		template<typename TFactor, typename TCounter>
+		using MatchOr = Match<_MatchOr<TFactor>, TCounter>;
         
+		template<typename TFactor, typename TCounter>
+		using MatchChain = Match<_MatchChain<TFactor>, TCounter>;
+		
         // Regex
         
 		template <typename ... TMatchSeries>
@@ -468,10 +522,6 @@ namespace LiongPlus
 				return flag;
 			}
 		};
-
-
-
-
 	}
 }
 
@@ -479,6 +529,18 @@ template<typename T, T ... TStr>
 constexpr LiongPlus::Regex::ConstStrParser<TStr...> operator""_L_Regex()
 {
     return {};
+}
+
+template<char TC>
+constexpr bool IsReserved()
+{
+	return TC == '+' || TC == '*' || TC == '?' || TC == '\\' || TC == '{' || TC == '}' || TC == '[' || TC == ']' || TC == '(' || TC == ')' || TC == '^' || TC == '$' || TC == '|';
+}
+
+template<char TC>
+constexpr bool IsQuantifier()
+{
+	return TC == '+' || TC == '*' || TC == '?' || TC == '{' || TC == '}';
 }
 
 #define _L_RX(x) decltype(x##_L_Regex)

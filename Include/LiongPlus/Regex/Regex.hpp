@@ -26,17 +26,17 @@ namespace LiongPlus
         // RepetitionCounters
         
 		template<long TFrom, long TTo>
-		class RepetitionCounter
+		class RepCounter
 		{
 		public:
 			constexpr static long From = TFrom;
 			constexpr static long To = TTo;
 		};
 
-		typedef RepetitionCounter<0, 0> Never;
-		typedef RepetitionCounter<0, -1> NeverOrMore;
-		typedef RepetitionCounter<0, 1> OnceOrNever;
-		typedef RepetitionCounter<1, -1> OnceOrMore;
+		typedef RepCounter<0, 0> Never;
+		typedef RepCounter<0, -1> NeverOrMore;
+		typedef RepCounter<0, 1> OnceOrNever;
+		typedef RepCounter<1, -1> OnceOrMore;
 
         // Determinators
 
@@ -45,7 +45,7 @@ namespace LiongPlus
 		//       Also, it also need to check if it is at the end of string for safety.
         //       '\0' should never be used in regex.
         
-        enum class DeterResult
+        enum class bool
         {
             Succeeded,
             StepOut,
@@ -56,251 +56,251 @@ namespace LiongPlus
         class SameTo
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = (*c == TC);
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         template<char TC>
         class DifFrom
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = (*c != TC && *c != '\0');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         template<typename T>
-        class SameToString;
+        class SameToStr;
         template<char ... TStr>
-        class SameToString<ConstStrParser<TStr...>>
+        class SameToStr<ConstStrParser<TStr...>>
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 auto str = c;
                 std::array<char, sizeof...(TStr)> _Str = { TStr... };
                 for (auto strc : _Str)
                 {
                     if (*str != strc)
-                        return DeterResult::Failed;
+                        return false;
                     ++str;
                 }
                 c = str;
-                return DeterResult::Succeeded;
+                return true;
             }
         };
         template<typename T>
-        class DifFromString;
+        class DifFromStr;
         template<char ... TStr>
-        class DifFromString<ConstStrParser<TStr...>>
+        class DifFromStr<ConstStrParser<TStr...>>
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 auto str = c;
                 std::array<char, sizeof...(TStr)> _Str = { TStr... };
                 for (auto strc : _Str)
                 {
                     if (*str != strc)
-                        return DeterResult::Succeeded;
+                        return true;
                     ++str;
                 }
-                return DeterResult::Failed;
+                return false;
             }
         };
         template<char TFrom, char TTo>
         class InRange
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = (TFrom >= *c && *c <= TTo);
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         template<char TFrom, char TTo>
         class OutOfRange
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = ((TFrom < *c || *c > TTo) && *c != '\0');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         class IsBlank
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = (*c == ' ' || *c == '\t');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         class IsDigit
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
 			{
                 bool rv = ((*c >= '0' && *c <= '9') && *c != '\0');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
 			}
 		};
 		class NotDigit
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
 			{
                 bool rv = ((*c < '0' || *c > '9') && *c != '\0');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
 			}
 		};
         class IsUpper
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = ((*c >= 'A' && *c <= 'Z') && *c != '\0');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         class NotUpper
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = ((*c < 'A' || *c > 'Z') && *c != '\0');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         class IsAlpha
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = (((*c >= 'A' && *c <= 'Z') || (*c >= 'a' && *c <= 'z')) && *c != '\0');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         class NotAlpha
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = (((*c < 'A' || *c > 'Z') && (*c < 'a' || *c > 'z')) && *c != '\0');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         class IsLower
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = ((*c >= 'a' && *c <= 'z') && *c != '\0');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         class NotLower
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = ((*c < 'A' || *c > 'Z') && *c != '\0');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         class IsSpace
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n' || *c == '\v' || *c == '\f');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         class NotSpace
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = ((*c != ' ' && *c != '\t' && *c != '\r' && *c != '\n' && *c != '\v' && *c != '\f') && *c != '\0');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         class IsWord
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = ((*c >= 'A' && *c <= 'Z') || (*c >= 'a' && *c <= 'z') || (*c >= '0' && *c <= '9') || *c == '_');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         class NotWord
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = ((*c < 'A' || *c > 'Z') && (*c < 'a' || *c > 'z') && (*c < '0' || *c > '9') && *c != '_');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         class AnyChar
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 bool rv = (*c != '\0');
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                if (rv) return ++c, true;
+                else return false;
             }
         };
         // This is used to escape from loops.
         // <TStopCondition> is another determinator which decides when to step out.
         // If condition is satisfied, $c MUST be at the beginning of stop condition.
         // Generally this is is used with Anychar.
-        template<typename TDeterminator, typename TStopCondition>
+        template<typename TDeter, typename TStopCondition>
         class Conditional
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
                 auto str = c;
                 if (TStopCondition::Do(str))
-                    return DeterResult::StepOut;
+                    return false;
                 c = str;
-                bool rv = TDeterminator::Do(c);
-                if (rv) return ++c, DeterResult::Succeeded;
-                else return DeterResult::Failed;
+                bool rv = TDeter::Do(c);
+                if (rv) return ++c, true;
+                else return false;
             }
         };
-        template<DeterResult(*TDeterminator)(char*&)>
+        template<bool(*TDeter)(char*&)>
         class Customized
         {
         public:
-            static DeterResult Do(char*& c)
+            static bool Do(char*& c)
             {
-                return TDeterminator(c);
+                return TDeter(c);
             }
         };
         
@@ -315,7 +315,7 @@ namespace LiongPlus
             virtual ~MatchBase() {}
             virtual bool Do(char*&) = 0;
 		};
-		template<typename TDeterminator, typename TCounter>
+		template<typename TDeter, typename TCounter>
 		class Match : public MatchBase
 		{
 		public:
@@ -327,7 +327,7 @@ namespace LiongPlus
 				long counter = TCounter::From; // At least $TCounter::From times.
 				while (counter-- > 0)
 				{
-                    if (TDeterminator::Do(c) != DeterResult::Succeeded)
+                    if (TDeter::Do(c) != true)
 						return false;
 				}
 
@@ -336,77 +336,71 @@ namespace LiongPlus
 					counter = TCounter::To - TCounter::From; // At most $TCounter::To times.
 					while (counter-- > 0)
 					{
-                        if (TDeterminator::Do(c) != DeterResult::Succeeded)
+                        if (TDeter::Do(c) != true)
 							return true;
 					}
                     auto str = c;
-                    if (TDeterminator::Do(str) == DeterResult::Succeeded) // There should be no more now.
+                    if (TDeter::Do(str) == true) // There should be no more now.
 						return false;
 				}
 				else
 				{
-                    while (TDeterminator::Do(c) == DeterResult::Succeeded);
+                    while (TDeter::Do(c) == true);
 				}
 
 				return true;
 			}
 		};
-		template<typename TDeterminator>
-		class Match<TDeterminator, RepetitionCounter<0, 0>> : public MatchBase
+		template<typename TDeter>
+		class Match<TDeter, RepCounter<0, 0>> : public MatchBase
 		{
 		public:
 			bool Do(char*& c) override
 			{
-                return (TDeterminator::Do(c) != DeterResult::Succeeded);
+                return (TDeter::Do(c) != true);
             }
 		};
-		template<typename TDeterminator>
-		class Match<TDeterminator, RepetitionCounter<0, -1>> : public MatchBase
+		template<typename TDeter>
+		class Match<TDeter, RepCounter<0, -1>> : public MatchBase
 		{
 		public:
 			bool Do(char*& c) override
 			{
-                while (TDeterminator::Do(c) != DeterResult::Succeeded);
+                while (TDeter::Do(c) != true);
 
 				return true;
 			}
 		};
-		template<typename TDeterminator>
-		class Match<TDeterminator, RepetitionCounter<0, 1>> : public MatchBase
+		template<typename TDeter>
+		class Match<TDeter, RepCounter<0, 1>> : public MatchBase
 		{
 		public:
 			bool Do(char*& c) override
 			{
-                if (TDeterminator::Do(c) == DeterResult::Succeeded)
+                if (TDeter::Do(c) == true)
                 {
                     auto str = c;
-                    if (TDeterminator::Do(str) == DeterResult::Succeeded)
+                    if (TDeter::Do(str) == true)
                         return false;
                 }
 				return true;
 			}
 		};
-		template<typename TDeterminator>
-		class Match<TDeterminator, RepetitionCounter<1, -1>> : public MatchBase
+		template<typename TDeter>
+		class Match<TDeter, RepCounter<1, -1>> : public MatchBase
 		{
 		public:
 			bool Do(char*& c) override
 			{
-                if (TDeterminator::Do(c) != DeterResult::Succeeded)
+                if (TDeter::Do(c) != true)
 					return false;
-                while (TDeterminator::Do(c) == DeterResult::Succeeded);
+                while (TDeter::Do(c) == true);
 
 				return true;
 			}
 		};
         
         // Logical operation
-        
-        template<typename ... T>
-        class MatchOr; // Do determinator or and match or ////////////////
-        
-        template<typename TDeterminator>
-        class MatchFactor; // Used to parse determinators when doing determinator or //////////////
         
         template<typename ... TMatchSeries>
         class MatchOr : public MatchBase
@@ -433,33 +427,6 @@ namespace LiongPlus
                         return true;
                 }
                 return false;
-            }
-        };
-        template<typename ... TMatchSeries>
-        class MatchAnd : public MatchBase
-        {
-        private:
-            std::array<MatchBase*, sizeof...(TMatchSeries)> _MatchSeries;
-        public:
-            MatchAnd()
-            {
-                _MatchSeries = { new TMatchSeries()... };
-            }
-            ~MatchAnd()
-            {
-                for (MatchBase* ptr : _MatchSeries)
-                    delete ptr;
-            }
-            
-            bool Do(char*& c)
-            {
-                for (auto match : _MatchSeries)
-                {
-                    auto temp = c;
-                    if (!match->Do(temp))
-                        return false;
-                }
-                return true;
             }
         };
         

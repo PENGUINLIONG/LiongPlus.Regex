@@ -25,7 +25,6 @@ void ex1()
         >
     > regex;
     
-    
     std::cout << (regex.Match("http://regexr.com/foo.html?q=bar") ? "true" : "false") << std::endl;
     std::cout << (regex.Match("foo@demo.net") ? "true" : "false") << std::endl;
 }

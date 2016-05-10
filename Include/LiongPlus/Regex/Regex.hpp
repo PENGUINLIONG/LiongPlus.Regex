@@ -60,7 +60,10 @@ namespace LiongPlus
                 for (auto flag : rst)
 				{
 					if (flag)
+                    {
+                        ++c;
 						return true;
+                    }
 				}
                 return false;
             }
@@ -106,8 +109,11 @@ namespace LiongPlus
                 for (auto flag : rst)
 				{
 					if (flag)
-						return false;
-				}
+                    {
+                        ++c;
+                        return false;
+                    }
+                }
                 return true;
             }
         };
@@ -162,12 +168,32 @@ namespace LiongPlus
                 else return false;
             }
         };
+		class IsPunct
+        {
+        public:
+            static bool Do(char*& c)
+			{
+                bool rv = ((*c >= '!' && *c <= '/') || (*c >= ':' && *c <= '@') || (*c >= '[' && *c <= '`') || (*c >= '{' && *c <= '~'));
+                if (rv) return ++c, true;
+                else return false;
+			}
+		};
+		class NotPunct
+        {
+        public:
+            static bool Do(char*& c)
+			{
+                bool rv = (((*c < '!' && *c > '/') || (*c < ':' && *c > '@') || (*c < '[' && *c > '`') || (*c < '{' && *c > '~')) && *c != '\0');
+                if (rv) return ++c, true;
+                else return false;
+			}
+		};
         class IsDigit
         {
         public:
             static bool Do(char*& c)
 			{
-                bool rv = ((*c >= '0' && *c <= '9') && *c != '\0');
+                bool rv = (*c >= '0' && *c <= '9');
                 if (rv) return ++c, true;
                 else return false;
 			}
@@ -187,7 +213,7 @@ namespace LiongPlus
         public:
             static bool Do(char*& c)
             {
-                bool rv = ((*c >= 'A' && *c <= 'Z') && *c != '\0');
+                bool rv = (*c >= 'A' && *c <= 'Z');
                 if (rv) return ++c, true;
                 else return false;
             }
@@ -207,7 +233,7 @@ namespace LiongPlus
         public:
             static bool Do(char*& c)
             {
-                bool rv = (((*c >= 'A' && *c <= 'Z') || (*c >= 'a' && *c <= 'z')) && *c != '\0');
+                bool rv = ((*c >= 'A' && *c <= 'Z') || (*c >= 'a' && *c <= 'z'));
                 if (rv) return ++c, true;
                 else return false;
             }
@@ -227,7 +253,7 @@ namespace LiongPlus
         public:
             static bool Do(char*& c)
             {
-                bool rv = ((*c >= 'a' && *c <= 'z') && *c != '\0');
+                bool rv = (*c >= 'a' && *c <= 'z');
                 if (rv) return ++c, true;
                 else return false;
             }
@@ -484,9 +510,15 @@ namespace LiongPlus
 		template<typename TFactor, typename TCounter>
 		using MatchChain = Match<_MatchChain<TFactor>, TCounter>;
 		
+		// Anchor
+		
+		class StartOfLine { };
+		
+		class EndOfLine { };
+		
         // Regex
         
-		template <typename ... TMatchSeries>
+		template<typename ... TMatchSeries>
 		class Regex
 		{
 		private:
@@ -508,16 +540,24 @@ namespace LiongPlus
                 bool flag = false;
 				while (*strToGo != '\0')
 				{
+                    auto temp = strToGo;
+                    // There should be no overlap
                     bool flagForThisTime = true;
 					for (MatchBase* match : _MatchSeries)
 					{
-						if (!match->Do(strToGo))
+						if (!match->Do(temp))
+                        {
                             flagForThisTime = false;
+                            break;
+                        }
 					}
                     if (flagForThisTime)
+                    {
+                        strToGo = temp;
                         flag = true;
-                    
-                    ++strToGo;
+                    }
+                    else
+                        ++strToGo;
 				}
 				return flag;
 			}
@@ -529,18 +569,6 @@ template<typename T, T ... TStr>
 constexpr LiongPlus::Regex::ConstStrParser<TStr...> operator""_L_Regex()
 {
     return {};
-}
-
-template<char TC>
-constexpr bool IsReserved()
-{
-	return TC == '+' || TC == '*' || TC == '?' || TC == '\\' || TC == '{' || TC == '}' || TC == '[' || TC == ']' || TC == '(' || TC == ')' || TC == '^' || TC == '$' || TC == '|';
-}
-
-template<char TC>
-constexpr bool IsQuantifier()
-{
-	return TC == '+' || TC == '*' || TC == '?' || TC == '{' || TC == '}';
 }
 
 #define _L_RX(x) decltype(x##_L_Regex)

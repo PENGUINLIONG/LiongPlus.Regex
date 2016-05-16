@@ -1,3 +1,10 @@
+// File: Magic.hpp
+// Author: Rendong Liang (Liong)
+
+#pragma once
+#include "Regex.hpp"
+
+struct BuggyRegex {};
 
 template<char TC>
 constexpr bool isSetIndicator()
@@ -89,32 +96,110 @@ constexpr char findNextReserved()
 	else return findNextReserved<TElse...>;
 }
 
-template<char ... TStr>
-constexpr auto analysis
+template<char TTarget, char ... TStr>
+constexpr auto substrTill()
 {
-	// If the first char is a reserved char.
-	if (isReserved<getFirstChar<TStr...>()>)
+	if (getFirstChar<TStr...>() == '\0')
+		return BuggyRegex;
+	if (TTarget == getFirstChar<TStr...>())
+		return ConstStrParser<>;
+	else
+		return ConstStrParser<getFirstChar<TStr...>(), substrTill<TTarget, getFirstCharRemainder<TStr...>()>::template>;
+}
+
+constexpr size_t makeNum(size_t num, char c)
+{
+	return num * 10 + (c - '0');
+}
+constexpr bool isDigit(char c)
+{
+	return (c >= '0' && c <= '9');
+}
+
+// If the counter is limited, call this function
+template<size_t TMin, size_t TMax, char ... TStr>
+constexpr auto getRepCounterImplMax()
+{
+	if (!isDigit(getFirstChar<TStr...>()))
+		return BuggyRegex;
+	return getRepCounterImplMax<TMin, makeNum(TMax, getFirstChar<TStr...>()), TStr...>();
+}
+template<size_t TMin, size_t TMax>
+constexpr auto getRepCounterImplMax<TMin, TMax>()
+{
+	return RepCounter<TMin, TMax>;
+}
+
+template<size_t TMin, char ... TStr>
+constexpr auto getRepCounterImpl()
+{
+	if (!isDigit(getFirstChar<TStr...>()))
 	{
-		// Check it is leading a escape sequence.
-		if (getFirstChar<TStr...> == '\\')
+		if (getFirstChar<TStr...>() == ',' && isDigit(getSecondChar<TStr...>()))
+			return getRepCounterImplMax<TMin, 0, TStr...>();
+		else
+			return BuggyRegex;
+	}
+	return getRepCounterImpl<makeNum(TMin, getFirstChar<TStr...>()), TStr...>();
+}
+template<size_t TMin>
+constexpr auto getRepCounterImpl<TMin>()
+{
+	return RepCounter<TMin, TMin>;
+}
+
+template<char ... TStr>
+constexpr auto getRepCounter()
+{
+	switch (getFirstChar<TStr...>())
+	{
+	case '?':
+		return OnceOrNever;
+	case '+':
+		return OnceOrMore;
+	case '*':
+		return NeverOrMore;
+	case '{':
+		if (getSecondChar<TStr>() == '\0')
+			return BuggyRegex;
+		return getRepCounterImpl<0>;
+	default:
+		return Once;
+	}
+}
+
+template<char ... TStr>
+constexpr auto analysisOr()
+{
+	// Escape
+	if (getFirstChar<TStr...>() == '\\')
+		return Match<>, analysisOr<getSecondCharRemainder<TStr...>()>();
+	if (get)
+	return analysisOr<>
+}
+
+template<char ... TStr>
+constexpr auto analysisChain()
+{
+	
+}
+
+template<char ... TStr>
+constexpr auto analysis()
+{
+	if (isReserved<TC>())
+	{
+		switch (TC)
 		{
-			// Is it a set indicator?
-			if (isSetIndicator<getSecondChar<TStr...>()>())
-			{
-				// Is is a quantifier following?
-				if (isQuantifier<getThirdChar<TStr...>()>)
-					// Yes, so we have got an entire one, return the Match.
-					return Match<typename DeterPack<getSecondChar<TStr...>()>::Type, typename QuantifierPack<getThirdChar<TStr...>()>::Type>;
-			}
-				
-			if (isReserved<getSecondChar>)
-				return analysis<getFirstCharRemainder<TStr...>()>;
-			
+			case '(':
+				analysis<substrTill<')', TElse>()>();
+				break;
+			case '[':
+				analysis<substrTill<']', TElse>()>();
 		}
 	}
-	
-	
-	
+	else
+		return Regex<analysis<>()>;
 }
 
 template<char ... TStr>

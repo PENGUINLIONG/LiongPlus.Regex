@@ -487,7 +487,7 @@ namespace LiongPlus
         };
 		
 		template<typename TFactor>
-        class _MatchChain
+        class _CaptureGroup
         {
         public:
             static bool Do(char*& c)
@@ -508,7 +508,7 @@ namespace LiongPlus
 		using MatchOr = Match<_MatchOr<TFactor>, TCounter>;
         
 		template<typename TFactor, typename TCounter>
-		using MatchChain = Match<_MatchChain<TFactor>, TCounter>;
+		using CaptureGroup = Match<_CaptureGroup<TFactor>, TCounter>;
 		
 		// Anchor
 		
@@ -517,48 +517,83 @@ namespace LiongPlus
 		class EndOfLine { };
 		
         // Regex
-        
-		template<typename ... TMatchSeries>
-		class Regex
+		
+		class RegexBase
 		{
 		private:
 			std::array<MatchBase*, sizeof...(TMatchSeries)> _MatchSeries;
+			
+			bool DoMatch(char*& str)
+			{
+				auto temp = str;
+				// There should be no overlap
+				bool flagForThisTime = true;
+				for (MatchBase* match : _MatchSeries)
+				{
+					if (!match->Do(temp))
+					{
+						flagForThisTime = false;
+						break;
+					}
+				}
+				if (flagForThisTime)
+				{
+					str = temp;
+					return true;
+				}
+				else
+				{
+					++str;
+					return false;
+				}
+			}
 		public:
 			Regex()
+                : _MatchSeries{ new TMatchSeries()... }
             {
-                _MatchSeries = { new TMatchSeries()... };
 			}
-            ~Regex()
+            virtual ~Regex()
             {
                 for (MatchBase* ptr : _MatchSeries)
                     delete ptr;
             }
-
+		}
+        
+		template<typename ... TMatchSeries>
+		class Regex : public RegexBase
+		{
 			bool Match(const char* str)
 			{
 				char* strToGo = const_cast<char*>(str);
                 bool flag = false;
 				while (*strToGo != '\0')
 				{
-                    auto temp = strToGo;
-                    // There should be no overlap
-                    bool flagForThisTime = true;
-					for (MatchBase* match : _MatchSeries)
-					{
-						if (!match->Do(temp))
-                        {
-                            flagForThisTime = false;
-                            break;
-                        }
-					}
-                    if (flagForThisTime)
-                    {
-                        strToGo = temp;
-                        flag = true;
-                    }
-                    else
-                        ++strToGo;
+					if (DoMatch(strToGo))
+						flag = true;
 				}
+				return flag;
+			}
+		};
+		
+		template<typename ... TMatchSeries>
+		class RegexAtStartOfLine : public RegexBase
+		{
+			bool Match(const char* str)
+			{
+				char* strToGo = const_cast<char*>(str);
+                bool flag = false;
+				do
+				{
+                    if (DoMatch(strToGo))
+						flag = true;
+					while (*strToGo != '\n' || *strToGo != '\0') ++strToGo; // loop over non-landmark.
+					if (*strToGo == '\0') return flag; // At the end of string, return.
+					else if (*strToGo == '\n') // At the start of line, match.
+					{
+						++strToGo;
+						continue;
+					}
+				} while (true);
 				return flag;
 			}
 		};

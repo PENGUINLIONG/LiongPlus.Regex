@@ -57,34 +57,45 @@ struct QuantifierPack<'*'> { typedef NeverOrMore Type; };
 struct QuantifierPack<'?'> { typedef OnceOrNever Type; };
 
 template<char TFirst, char ... TElse>
-constexpr char getFirstChar()
+constexpr char get1st()
 {
 	return TFirst;
 }
 template<char TFirst, char ... TElse>
-constexpr ConstStrParser<TElse...> getFirstCharRemainder()
+constexpr ConstStrParser<TElse...> get1stRemainder()
 {
 	return {};
 }
 
 template<char TFirst, char TSecond, char ... TElse>
-constexpr char getSecondChar()
+constexpr char get2nd()
 {
 	return TSecond;
 }
 template<char TFirst, char TSecond, char ... TElse>
-constexpr ConstStrParser<TElse...> getSecondCharRemainder()
+constexpr ConstStrParser<TElse...> get2ndRemainder()
 {
 	return {};
 }
 
 template<char TFirst, char TSecond, char TThird, char ... TElse>
-constexpr char getThirdChar()
+constexpr char get3rd()
 {
 	return TThird;
 }
 template<char TFirst, char TSecond, char TThird, char ... TElse>
-constexpr ConstStrParser<TElse...> getThirdCharRemainder()
+constexpr ConstStrParser<TElse...> get3rdRemainder()
+{
+	return {};
+}
+
+template<char TFirst, char TSecond, char TThird, char TFourth, char ... TElse>
+constexpr char get4th()
+{
+	return TFourth;
+}
+template<char TFirst, char TSecond, char TThird, char TFourth, char ... TElse>
+constexpr ConstStrParser<TElse...> get4thRemainder()
 {
 	return {};
 }
@@ -99,12 +110,20 @@ constexpr char findNextReserved()
 template<char TTarget, char ... TStr>
 constexpr auto substrTill()
 {
-	if (getFirstChar<TStr...>() == '\0')
+	if (get1st<TStr...>() == '\0')
 		return BuggyRegex;
-	if (TTarget == getFirstChar<TStr...>())
+	if (TTarget == get1st<TStr...>())
 		return ConstStrParser<>;
 	else
-		return ConstStrParser<getFirstChar<TStr...>(), substrTill<TTarget, getFirstCharRemainder<TStr...>()>::template>;
+		return ConstStrParser<get1st<TStr...>(), substrTill<TTarget, get1stRemainder<TStr...>()>::template>;
+}
+template<char TTarget, char ... TStr>
+constexpr auto substrAfter()
+{
+	if (get1st<TStr...>() == '\0')
+		return BuggyRegex;
+	if (TTarget == get1st<TStr...>())
+		return ConstStrParser<get1stRemainder<TStr...>()>;
 }
 
 constexpr size_t makeNum(size_t num, char c)
@@ -120,9 +139,9 @@ constexpr bool isDigit(char c)
 template<size_t TMin, size_t TMax, char ... TStr>
 constexpr auto getRepCounterImplMax()
 {
-	if (!isDigit(getFirstChar<TStr...>()))
+	if (!isDigit(get1st<TStr...>()))
 		return BuggyRegex;
-	return getRepCounterImplMax<TMin, makeNum(TMax, getFirstChar<TStr...>()), TStr...>();
+	return getRepCounterImplMax<TMin, makeNum(TMax, get1st<TStr...>()), TStr...>();
 }
 template<size_t TMin, size_t TMax>
 constexpr auto getRepCounterImplMax<TMin, TMax>()
@@ -133,14 +152,14 @@ constexpr auto getRepCounterImplMax<TMin, TMax>()
 template<size_t TMin, char ... TStr>
 constexpr auto getRepCounterImpl()
 {
-	if (!isDigit(getFirstChar<TStr...>()))
+	if (!isDigit(get1st<TStr...>()))
 	{
-		if (getFirstChar<TStr...>() == ',' && isDigit(getSecondChar<TStr...>()))
-			return getRepCounterImplMax<TMin, 0, TStr...>();
+		if (get1st<TStr...>() == ',' && isDigit(get2nd<TStr...>()))
+			return getRepCounterImplMax<TMin, 0, get1stRemainder<TStr...>()>();
 		else
 			return BuggyRegex;
 	}
-	return getRepCounterImpl<makeNum(TMin, getFirstChar<TStr...>()), TStr...>();
+	return getRepCounterImpl<makeNum(TMin, get1st<TStr...>()), TStr...>();
 }
 template<size_t TMin>
 constexpr auto getRepCounterImpl<TMin>()
@@ -151,7 +170,7 @@ constexpr auto getRepCounterImpl<TMin>()
 template<char ... TStr>
 constexpr auto getRepCounter()
 {
-	switch (getFirstChar<TStr...>())
+	switch (get1st<TStr...>())
 	{
 	case '?':
 		return OnceOrNever;
@@ -160,7 +179,7 @@ constexpr auto getRepCounter()
 	case '*':
 		return NeverOrMore;
 	case '{':
-		if (getSecondChar<TStr>() == '\0')
+		if (get2nd<TStr>() == '\0')
 			return BuggyRegex;
 		return getRepCounterImpl<0>;
 	default:
@@ -168,20 +187,58 @@ constexpr auto getRepCounter()
 	}
 }
 
-template<char ... TStr>
-constexpr auto analysisOr()
+template<Match ... TMatchSeries>
+struct ConstMatchSeries
+{
+};
+
+template<typename TMatchSeries, char ... TStr>
+constexpr auto analysisOrImpl() // Note that there is no repetition counter in OR groups. 
 {
 	// Escape
-	if (getFirstChar<TStr...>() == '\\')
-		return Match<>, analysisOr<getSecondCharRemainder<TStr...>()>();
+	if (get1st<TStr...>() == '\\')
+	{
+		if (isSetIndicator<get2nd<TStr...>()>)
+		else
+			return ConstMatchSeries<>
+	}
 	if (get)
 	return analysisOr<>
 }
 
 template<char ... TStr>
-constexpr auto analysisChain()
+constexpr auto analysisOr
 {
 	
+}
+
+template<typename TMatchSeries, char ... TStr>
+constexpr auto analysisChainImpl()
+{
+	if (get1st<TStr...>() == '\0') return TMatchSeries;
+	// Escape
+	if (get1st<TStr...>() == '\\')
+	{
+		if (isSetIndicator<get2nd<TStr...>()>)
+		{
+			return DeterPack<get2nd<TStr...>()>;
+			/////////////////// GO ON
+		}
+		else
+		{
+			if (get3rd<TStr...>() == '{') // The length of repcounter varies.
+				return analysisChainImpl<ConstMatchSeries<TMatchSeries::template Match<get3rd<TStr...>(), getRepCounter<get3ndRemainder<TStr...>()>>, substrAfter<TStr...>()>;
+			else // The length of repcounter doesn't varies.
+			{
+				if (get4th<TStr...>())
+					return analysisChainImpl<ConstMatchSeries<TMatchSeries::template Match<get3rd<TStr...>(), Once>>, get4thRemainder<TStr...>()>;
+				else
+					return analysisChainImpl<ConstMatchSeries<TMatchSeries::template Match<get3rd<TStr...>(), getRepCounter<get4th<TStr...>()>>, get4thRemainder <TStr...>()>;
+			}
+		}
+	}
+	
+	if ()
 }
 
 template<char ... TStr>
@@ -205,5 +262,5 @@ constexpr auto analysis()
 template<char ... TStr>
 constexpr auto makeRegex()
 {
-	analysis<TStr ..., '\0', '\0'>();
+	analysis<TStr ..., '\0', '\0', '\0'>();
 }

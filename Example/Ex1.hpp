@@ -6,7 +6,7 @@ void ex1()
     using namespace LiongPlus::Regex;
     // ((\w+:\/\/)[-a-zA-Z0-9:@;?&=\/%\+\.\*!'\(\),\$_\{\}\^~\[\]`#|]+)
     Regex<
-        MatchChain<
+        CaptureGroup<
             MatchFactor<
                 Match<IsWord, OnceOrMore>,
                 Match<SameToStr<_L_RX("://")>, Once>
